@@ -18,7 +18,9 @@ namespace SecondProject
 
         private void Form1_MouseClick(object sender, MouseEventArgs e)
         {
-            if (il1.isInside(e.X, e.Y))
+            
+            
+            if (il1.isButton(e.X, e.Y) || (il1.selected == true && il1.isOpen(e.X,e.Y)))
             {
                 il1.Select(true);
                 Invalidate();
@@ -28,6 +30,7 @@ namespace SecondProject
                 il1.Select(false);
                 Invalidate();
             }
+            
 
             //if (il2.isInside(e.X, e.Y))
             //{
@@ -45,7 +48,7 @@ namespace SecondProject
         {
             InitializeComponent();
 
-            il1 = new Imagelist(100,100,300,200,this);
+            il1 = new Imagelist(100,100,200,150,this);
            // il2 = new ImageList(100, 100, 75, 98);
         }
     }
