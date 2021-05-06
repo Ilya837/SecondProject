@@ -1,12 +1,17 @@
 ﻿using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Windows.Forms;
+using System.IO;
 
 
 namespace SecondProject
 {
+    
     class Imagelist
     {
+
+
         Form1 parent; // Родительская форма
         int d = 10; // Отступ между эллементами
         int X, Y; // Координаты
@@ -27,8 +32,14 @@ namespace SecondProject
         int count = 10;// Колличество картинок из файла
         int place ; // число картинок, помещающихся в выдвигающейся панельке
 
+        PictureBox[] list; // массив PictureBox -ов , использущихся в выдвигающейся части
+        bool end; // нужно-ли отрисовывать последнюю картинку ?
 
-        public Imagelist(int x,int y,int w,int h,Form1 f)
+        Image[] imlist; // массив изображений из файла
+
+        public object Image_MouseClick { get; private set; }
+
+        public Imagelist(int x,int y,int w,int h,Form1 f, string filename)
         {
             X = x;
             Y = y;
@@ -47,9 +58,9 @@ namespace SecondProject
             picture.Left = x + d;
             picture.Top = y + (h - picture.Height) / 2;
             picture.SizeMode = PictureBoxSizeMode.Zoom;
-            picture.Image = Image.FromFile("uk.jpg");
+            
 
-           
+            
 
             Xb = picture.Left + picture.Width + d;
             Yb = picture.Top;
@@ -60,10 +71,45 @@ namespace SecondProject
             triangle[1] = new Point(Xb + Wb - 4, Yb + 4);
             triangle[2] = new Point(Xb + Wb / 2, Yb + Hb - 3);
 
-            place = W / (10 + picture.Width) + 1;
+            place = (int) ( Math.Ceiling(((double)W) / ((double)(d + picture.Width)))) + 1;
+
+            list = new PictureBox[place];
+            for (int i = 0; i < place ; i++)
+            {
+                list[i] = new PictureBox();
+            }
 
             parent.Controls.Add(picture);
             picture.Invalidate();
+
+            FileStream file = new FileStream(filename, FileMode.Open);
+            byte[] array = new byte[file.Length];
+            file.Read(array, 0, array.Length);
+            string textFromFile = System.Text.Encoding.Default.GetString(array);
+            string[] Im = textFromFile.Split('\r');
+            for (int i = 1; i< Im.Length;i++)
+            {
+                Im[i] = Im[i].Trim();
+            }
+            imlist = new Image[Im.Length];
+            count = Im.Length;
+            for (int i = 0;i< Im.Length; i++)
+            {
+                imlist[i] = Image.FromFile(Im[i]);
+
+                Image result = new Bitmap(picture.Width, picture.Height);
+                using (Graphics g = Graphics.FromImage((Image)result))
+                {
+                    g.InterpolationMode = InterpolationMode.HighQualityBicubic; 
+                    g.DrawImage(imlist[i], 0, 0, picture.Width, picture.Height);
+                    g.Dispose();
+                }
+                imlist[i] = result;
+
+            }
+            file.Close();
+            picture.Image = imlist[0];
+
         }
 
         public void Draw(Graphics graph)
@@ -81,9 +127,64 @@ namespace SecondProject
                     Hs.Width = W - 1;
                     Hs.Location = new Point(X + 1, Y + H + picture.Height + 2 * d);
                     this.Hs.Scroll += new System.Windows.Forms.ScrollEventHandler(this.Hs_Scroll);
-                    Hs.Maximum = count * picture.Width + d * (count + 1) - H;
+                    Hs.Maximum = count * (picture.Width + d ) + d - W;
                     parent.Controls.Add(Hs);
                     graph.DrawRectangle(pen, X , Y + H , W, picture.Height + Sh + 2 * d);
+
+                    end = false;
+                   
+                    
+                    list[0].BackColor = Color.Black;
+                    list[0].Location = new Point(X + d, Y + H + d);
+                    list[0].Height = picture.Height;
+                    list[0].Width = picture.Width;
+                    list[0].Image = imlist[0];
+                    list[0].SizeMode = PictureBoxSizeMode.Zoom;
+                    list[0].Click += new System.EventHandler(this.Image_Click);
+                    parent.Controls.Add(list[0]);
+
+                    for (int i = 1; i < place - 1; i++)
+                    {
+                        
+                        list[i].BackColor = Color.Black;
+                        list[i].Location = new Point(X + d + (d + picture.Width) * i, Y + H + d);
+                        list[i].Height = picture.Height;
+                        if (d + (d + picture.Width) * i + picture.Width <= W)
+                        {
+                            list[i].Width = picture.Width;
+                            list[i].Image = imlist[i];
+                            list[i].SizeMode = PictureBoxSizeMode.Zoom;
+                        }
+                        else
+                        {
+                            list[i].Width = W - (d + picture.Width) * i - d;
+                            if (i < (imlist.Length))
+                            {
+                                list[i].Image = imlist[i];
+                            }
+                           
+                            list[i].SizeMode = PictureBoxSizeMode.StretchImage;
+                            end = true;
+                        }
+                        parent.Controls.Add(list[i]);
+                        list[i].Click += new System.EventHandler(this.Image_Click);
+                    }
+                    if (end == false)
+                    {
+                        list[place - 1].BackColor = Color.Black;
+                        list[place - 1].Location = new Point(X + d + (d + picture.Width) * (place - 1), Y + H + d);
+                        list[place - 1].Height = picture.Height;
+                        list[place - 1].Width = W - (d + picture.Width) * (place - 1) - d;
+                        if (place - 1  < (imlist.Length))
+                        {
+                            list[place - 1].Image = imlist[place - 1];
+                        }
+                        list[place - 1].SizeMode = PictureBoxSizeMode.StretchImage;
+                        parent.Controls.Add(list[place - 1]);
+                        list[place - 1].Click += new System.EventHandler(this.Image_Click);
+                    }
+                    list[place - 1].Click += new System.EventHandler(this.Image_Click);
+
                 }
                 else
                 {
@@ -96,6 +197,10 @@ namespace SecondProject
             else
             {
                 parent.Controls.Remove(Hs);
+                for(int i = 0; i< place; i++)
+                {
+                    parent.Controls.Remove(list[i]);
+                }
             }
            
 
@@ -109,6 +214,14 @@ namespace SecondProject
 
             // picture.Invalidate();
 
+        }
+
+        private void Image_Click(object sender, EventArgs e)
+        {
+            PictureBox pb = (PictureBox)sender;
+            picture.Image = pb.Image;
+            selected = false;
+            parent.Invalidate();
         }
 
         public void Select(bool value)
@@ -139,22 +252,68 @@ namespace SecondProject
         {
 
             HScrollBar hs = (HScrollBar) sender;
-            int os = hs.Value % (10 + picture.Width);
-            if(os < 10)
+
+            int de = hs.Value % (d + picture.Width);
+
+            int a = hs.Value / (picture.Width + d);
+
+            end = false;
+
+            if(de <= 10)
             {
-                int pr = d - os;
-                for(int i = 0; i< place; i++)
-                {
-                    // 
-                }
+                list[0].Location = new Point(X + d - de, Y + H + d );
+                list[0].Height = picture.Height;
+                list[0].Width = picture.Width;
+                list[0].Image = imlist[a];
+                list[0].SizeMode = PictureBoxSizeMode.Zoom;
             }
             else
             {
-                int pr = os - d;
-                for(int i = 0; i < place; i++)
+                list[0].Location = new Point(X , Y + H + d );
+                list[0].Height = picture.Height;
+                list[0].Width = picture.Width - (de - 10);
+                list[0].Image = imlist[a];
+                list[0].SizeMode = PictureBoxSizeMode.StretchImage;
+            }
+            
+
+
+            for (int i = 1; i < place - 1; i++)
+            {
+                list[i].BackColor = Color.Black;
+                list[i].Location = new Point(X + d + (d + picture.Width) * i - de, Y + H + d);
+                list[i].Height = picture.Height;
+                if ((d + picture.Width) * (i + 1) - de <= W)
                 {
-                    //
+                    list[i].Width = picture.Width;
+                    list[i].Image = imlist[i + a];
+                    list[i].SizeMode = PictureBoxSizeMode.Zoom;
                 }
+                else
+                {
+                    list[i].Width = W - (d + picture.Width) * i + de - d;
+                    list[i].Image = imlist[i + a];
+                    list[i].SizeMode = PictureBoxSizeMode.StretchImage;
+                    end = true;
+                }
+            }
+            if (end == false)
+            {
+                list[place - 1].BackColor = Color.Black;
+                list[place - 1].Location = new Point(X + d + (d + picture.Width) * (place - 1) - de, Y + H + d);
+                list[place - 1].Height = picture.Height;
+                list[place - 1].Width = W - (d + picture.Width) * (place - 1) - d + de;
+                if (place - 1 + a < (imlist.Length ))
+                {
+                    list[place - 1].Image = imlist[place - 1 + a];
+                }
+                list[place - 1].SizeMode = PictureBoxSizeMode.StretchImage;
+                if ( !parent.Controls.Contains(list[place - 1]))
+                    parent.Controls.Add(list[place - 1]);
+            }
+            else
+            {
+                parent.Controls.Remove(list[place - 1]);
             }
         }
     }

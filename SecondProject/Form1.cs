@@ -13,7 +13,7 @@ namespace SecondProject
             Graphics graph = this.CreateGraphics();
             il1.Draw(graph);
             
-          //  il2.Draw(graph);
+            il2.Draw(graph);
         }
 
         private void Form1_MouseClick(object sender, MouseEventArgs e)
@@ -30,26 +30,36 @@ namespace SecondProject
                 il1.Select(false);
                 Invalidate();
             }
-            
 
-            //if (il2.isInside(e.X, e.Y))
-            //{
-            //    il2.Select(true);
-            //    Invalidate();
-            //}
-            //else
-            //{
-            //    il2.Select(false);
-            //    Invalidate();
-            //}
+
+            if (il2.isButton(e.X, e.Y) || (il2.selected == true && il2.isOpen(e.X, e.Y)))
+            {
+                il2.Select(true);
+                Invalidate();
+            }
+            else
+            {
+                il2.Select(false);
+                Invalidate();
+            }
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void pictureBox1_Click(object sender, EventArgs e)
+        {
+
         }
 
         public Form1()
         {
             InitializeComponent();
 
-            il1 = new Imagelist(100,100,200,150,this);
-           // il2 = new ImageList(100, 100, 75, 98);
+            il1 = new Imagelist(100,100,200,150,this,"asd.txt");
+            il2 = new Imagelist(500, 100, 200, 100, this, "asd.txt");
         }
     }
 }
